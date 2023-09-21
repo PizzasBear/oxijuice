@@ -1,0 +1,20 @@
+{
+    "name": "oxijuice",
+    "version": "1.0.0",
+    "description": "Juice up your JS with some Oxide",
+    "main": "dist",
+    "types": "dist",
+    "exports": {
+        ".": "./dist/index.js"
+    },
+    "type": "module",
+    "scripts": {
+        "prepack": "rm -r dist ; tsc"
+    },
+    "keywords": [],
+    "author": "PizzasBear",
+    "license": "Apache-2.0",
+    "devDependencies": {
+        "typescript": "^5.2.2"
+    }
+}

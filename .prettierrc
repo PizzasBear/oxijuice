@@ -1,0 +1,11 @@
+trailingComma: all
+arrowParens: avoid
+tabWidth: 4
+htmlWhitespaceSensitivity: "ignore"
+overrides:
+  - files: [".prettierrc", "*.yaml"]
+    options:
+      tabWidth: 2
+  - files: "*.md"
+    options:
+      tabWidth: 2

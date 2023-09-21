@@ -1,0 +1,124 @@
+type If<O extends boolean, T, F, E = never> = [O] extends [true]
+    ? T
+    : [O] extends [false]
+    ? F
+    : E;
+
+export type Result<T, E> =
+    | ResultPart<T, never, true>
+    | ResultPart<never, E, false>;
+
+export function Ok<T>(value: T): ResultPart<T, never, true> {
+    return new ResultPart<T, never, true>(true, value);
+}
+
+export function Err<E>(value: E): ResultPart<never, E, false> {
+    return new ResultPart<never, E, false>(false, value);
+}
+
+export function resultify<T, E>(
+    f: () => T,
+    isE: (e: unknown) => e is E,
+): Result<T, E> {
+    try {
+        return Ok(f());
+    } catch (err) {
+        if (isE(err)) {
+            return Err(err);
+        } else {
+            throw err;
+        }
+    }
+}
+
+export function resultifyAll<T>(f: () => T): Result<T, unknown> {
+    try {
+        return Ok(f());
+    } catch (err) {
+        return Err(err);
+    }
+}
+
+export function resultifyPromise<T, E>(
+    p: Promise<T>,
+    isE: (e: unknown) => e is E,
+): Promise<Result<T, E>> {
+    return p.then(Ok, err => {
+        if (isE(err)) return Err(err);
+        else throw err;
+    });
+}
+
+export function resultifyPromiseAll<T>(
+    p: Promise<T>,
+): Promise<Result<T, unknown>> {
+    return p.then(Ok, Err);
+}
+
+class ResultPart<T, E, O extends boolean> {
+    private ok: If<O, true, false>;
+    #value: If<O, T, E>;
+
+    get value(): If<O, T, E> {
+        return this.value;
+    }
+
+    constructor(ok: If<O, true, false>, value: If<O, T, E>) {
+        this.ok = ok;
+        this.#value = value;
+    }
+
+    map<T, E, U>(this: Result<T, E>, f: (x: T) => U): Result<U, E> {
+        return this.ok ? Ok(f(this.#value)) : this;
+    }
+
+    isOk(): this is ResultPart<T, E, true> {
+        return this.ok;
+    }
+
+    mapErr<T, E, U>(this: Result<T, E>, f: (x: E) => U): Result<T, U> {
+        return this.ok ? this : Err(f(this.#value));
+    }
+
+    /** UNSOUND: uses `as` internally */
+    castMap<T, E, U>(this: Result<T, E>): Result<U, E> {
+        return this as Result<U, E>;
+    }
+
+    /** UNSOUND: uses `as` internally */
+    castMapErr<T, E, U>(this: Result<T, E>): Result<T, U> {
+        return this as Result<T, U>;
+    }
+
+    collapse<T>(this: Result<T, T> | ResultPart<T, T, boolean>): T {
+        return this.#value;
+    }
+
+    raise<T, E>(this: Result<T, E>): T {
+        if (this.ok) {
+            return this.#value;
+        } else {
+            throw this.#value;
+        }
+    }
+
+    unwrapOr<T, E>(this: Result<T, E>, def: T): T {
+        return this.ok ? this.#value : def;
+    }
+
+    unwrapOrElse<T, E>(this: Result<T, E>, def: (x: E) => T): T {
+        return this.ok ? this.#value : def(this.#value);
+    }
+
+    mapOr<T, E, U>(this: Result<T, E>, def: U, f: (x: T) => U): U {
+        return this.ok ? f(this.#value) : def;
+    }
+
+    mapOrElse<T, E, U>(
+        this: Result<T, E>,
+        def: (x: E) => U,
+        f: (x: T) => U,
+    ): U {
+        return this.ok ? f(this.#value) : def(this.#value);
+    }
+}
